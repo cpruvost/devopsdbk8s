@@ -14,7 +14,6 @@ pipeline {
 		string(defaultValue: "demoatp", description: 'What is the vault secret name ?', name: 'VAULT_SECRET_NAME')  
 		string(defaultValue: "atpdb2", description: 'What is the database name ?', name: 'DATABASE_NAME') 
 		password(defaultValue: "AlphA_2014_!", description: 'What is the database password ?', name: 'DATABASE_PASSWORD')  		
-		string(defaultValue: "https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/r2849V7j7r4WNhWkT24TOk8BRX7GUe4WfQUfPCPxh3E/n/oraseemeafrtech1/b/AtpDemo2/o/terraform.tfstate", description: 'Where is stored the terraform state ?', name: 'TERRAFORM_STATE_URL')  
 		choice(name: 'CHOICE', choices: ['Create', 'Remove'], description: 'Choose between Create or Remove Infrastructure')
     }
 	
@@ -31,10 +30,6 @@ pipeline {
 		TF_VAR_autonomous_database_db_name = "${params.DATABASE_NAME}"
 		TF_VAR_autonomous_database_db_password = "${params.DATABASE_PASSWORD}"
 		
-		//Terraform variables
-		TF_CLI_ARGS = "-no-color"
-		TF_VAR_terraform_state_url = "${params.TERRAFORM_STATE_URL}"
-		
 		//Sqlcl env variables for sqlcl oci option.
 		TNS_ADMIN = "./"
 
@@ -42,7 +37,6 @@ pipeline {
     
     stages {
 		stage('Display User Name') {
-			agent any
             steps {
 			    wrap([$class:'BuildUser']) {
 				    echo "${BUILD_USER}"
@@ -84,7 +78,6 @@ pipeline {
 				echo "TF_VAR_fingerprint=${TF_VAR_fingerprint}"
 				echo "TF_VAR_compartment_ocid=${TF_VAR_compartment_ocid}"
 				echo "TF_VAR_region=${TF_VAR_region}"
-				echo "TF_VAR_terraform_state_url=${TF_VAR_terraform_state_url}"
 				echo "DOCKERHUB_USERNAME=${DOCKERHUB_USERNAME}"
 				echo "DOCKERHUB_PASSWORD=${DOCKERHUB_PASSWORD}"
 				echo "KUBECONFIG=${KUBECONFIG}"
@@ -126,6 +119,27 @@ pipeline {
 				
 				//OCI CLI permissions mandatory on some files.
 				sh 'oci setup repair-file-permissions --file /root/.oci/config'
+            }
+        }
+		
+		stage('Check Kubernetes Cluster') {
+            steps {
+				script {
+					echo "CHOICE=${env.CHOICE}"
+					
+					//Check if Oke is already there
+					sh 'oci ce cluster list --compartment-id=${TF_VAR_compartment_ocid} --name=Demo2_InfraAsCode_OKE --lifecycle-state=ACTIVE | jq ". | length" > result.test'	
+					env.CHECK_OKE = sh (script: 'cat ./result.test', returnStdout: true).trim()
+					sh 'echo ${CHECK_OKE}'
+					
+					if (env.CHECK_OKE == "1") {
+						echo "Oke Already Exists"
+					}
+					else {
+						currentBuild.result = 'ABORTED'
+						error('Oke not here or not running…')
+					}	
+				}	
             }
         }
     }    
