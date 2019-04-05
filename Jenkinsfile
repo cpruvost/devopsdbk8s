@@ -89,29 +89,29 @@ pipeline {
 				echo "DOCKERHUB_PASSWORD=${DOCKERHUB_PASSWORD}"
 				echo "KUBECONFIG=${KUBECONFIG}"
 				
-				dir ('./tf/modules/atp') {
-					script {
-						//Get the API and SSH encoded key Files with vault client because curl breaks the end line of the key file
-						sh 'vault kv get -field=api_private_key secret/demoatp | tr -d "\n" | base64 --decode > bmcs_api_key.pem'
-						sh 'vault kv get -field=ssh_private_key secret/demoatp | tr -d "\n" | base64 --decode > id_rsa'
-						sh 'vault kv get -field=ssh_public_key secret/demoatp | tr -d "\n" | base64 --decode > id_rsa.pub'
-						
-						//OCI CLI permissions mandatory on some files.
-						sh 'oci setup repair-file-permissions --file ./bmcs_api_key.pem'
-						
-						sh 'ls'
-						sh 'cat ./bmcs_api_key.pem'
-						sh 'cat ./id_rsa'
-						sh 'cat ./id_rsa.pub'
-						
-						env.TF_VAR_private_key_path = './bmcs_api_key.pem'
-						echo "TF_VAR_private_key_path=${TF_VAR_private_key_path}"
-						env.TF_VAR_ssh_private_key = sh returnStdout: true, script: 'cat ./id_rsa'
-						echo "TF_VAR_ssh_private_key=${TF_VAR_ssh_private_key}"
-						env.TF_VAR_ssh_public_key = sh returnStdout: true, script: 'cat ./id_rsa.pub'
-						echo "TF_VAR_ssh_public_key=${TF_VAR_ssh_public_key}"
-					}
+				
+				script {
+					//Get the API and SSH encoded key Files with vault client because curl breaks the end line of the key file
+					sh 'vault kv get -field=api_private_key secret/demoatp | tr -d "\n" | base64 --decode > bmcs_api_key.pem'
+					sh 'vault kv get -field=ssh_private_key secret/demoatp | tr -d "\n" | base64 --decode > id_rsa'
+					sh 'vault kv get -field=ssh_public_key secret/demoatp | tr -d "\n" | base64 --decode > id_rsa.pub'
+					
+					//OCI CLI permissions mandatory on some files.
+					sh 'oci setup repair-file-permissions --file ./bmcs_api_key.pem'
+					
+					sh 'ls'
+					sh 'cat ./bmcs_api_key.pem'
+					sh 'cat ./id_rsa'
+					sh 'cat ./id_rsa.pub'
+					
+					env.TF_VAR_private_key_path = './bmcs_api_key.pem'
+					echo "TF_VAR_private_key_path=${TF_VAR_private_key_path}"
+					env.TF_VAR_ssh_private_key = sh returnStdout: true, script: 'cat ./id_rsa'
+					echo "TF_VAR_ssh_private_key=${TF_VAR_ssh_private_key}"
+					env.TF_VAR_ssh_public_key = sh returnStdout: true, script: 'cat ./id_rsa.pub'
+					echo "TF_VAR_ssh_public_key=${TF_VAR_ssh_public_key}"
 				}
+				
 				
 				//OCI CLI Setup
 				sh 'mkdir -p /root/.oci'
@@ -128,188 +128,5 @@ pipeline {
 				sh 'oci setup repair-file-permissions --file /root/.oci/config'
             }
         }
-		
-		stage('TF Plan Atp ') { 
-            steps {
-				dir ('./tf/modules/atp') {
-					sh 'ls'
-					
-					//Terraform initialization in order to get oci plugin provider	
-					sh 'terraform init -input=false -backend-config="address=${TF_VAR_terraform_state_url}"'
-					
-					
-					script {
-						echo "CHOICE=${env.CHOICE}"
-					    //Terraform plan
-					    if (env.CHOICE == "Create") {
-							//Check if Db is already there
-							sh 'oci db autonomous-database list --compartment-id=${TF_VAR_compartment_ocid} --display-name=Demo2_InfraAsCode_ATP --lifecycle-state=AVAILABLE | jq ". | length" > result.test'	
-							env.CHECK_DB = sh (script: 'cat ./result.test', returnStdout: true).trim()
-							sh 'echo ${CHECK_DB}'
-							
-							if (env.CHECK_DB == "1") {
-								echo "Db Already Exists"
-							}
-							else {
-								sh 'terraform plan -out myplan'
-							}
-							
-						}
-						else {
-						    sh 'terraform plan -destroy -out myplan'
-						}
-					}
-				}
-			}
-		}
-		
-		stage('TF Apply Atp ') { 
-            steps {
-				dir ('./tf/modules/atp') {
-					sh 'ls'
-					
-					script {				
-						echo "CHOICE=${env.CHOICE}"
-						
-					    //Terraform plan
-					    if (env.CHOICE == "Create") {
-							
-							if (env.CHECK_DB == "1") {
-								echo "Db Already Exists"
-							}
-							else {
-								//Ask Question in order to apply terraform plan or not
-								def deploy_validation = input(
-								id: 'Deploy',
-								message: 'Let\'s continue the deploy plan',
-								type: "boolean")
-							
-								sh 'terraform apply -input=false -auto-approve myplan'
-							}	
-							
-							sh 'ls'
-							
-							//Get atp wallet because initial atp wallet from terraform seems to have problem during unzip.
-							sh 'oci db autonomous-database list --compartment-id=${TF_VAR_compartment_ocid} --display-name=Demo2_InfraAsCode_ATP | jq -r .data[0].id > result.test'	
-							env.DB_OCID = sh (script: 'cat ./result.test', returnStdout: true).trim()
-							sh 'oci db autonomous-database generate-wallet --autonomous-database-id=${DB_OCID} --password=${TF_VAR_autonomous_database_db_password} --file=./myatpwallet.zip'
-						}
-						else {
-						    sh 'terraform destroy -input=false -auto-approve'
-						}
-					}
-				}
-			}
-		}
-		
-		stage('Create Schema in Atp') {
-            steps {
-                dir ('./sql') {
-					script {
-						if (env.CHOICE == "Create") {
-							sh 'pwd'
-							sh 'cp ../tf/modules/atp/myatpwallet.zip ./'
-							sh 'unzip -o ./myatpwallet.zip'
-							sh 'ls'
-							//Prepare sqlcl oci option
-							sh 'echo $TNS_ADMIN'
-							sh 'rm -rf ./sqlnet.ora'
-							sh 'mv ./sqlnet.ora.ref ./sqlnet.ora'
-							sh 'cat ./tnsnames.ora'
-							sh 'cat ./sqlnet.ora'
-							//Check Connection to Atp
-							sh 'exit | sql -oci admin/${TF_VAR_autonomous_database_db_password}@${TF_VAR_autonomous_database_db_name}_HIGH @./show_version.sql'
-							//Create schema in Atp
-							sh 'exit | sql -oci admin/${TF_VAR_autonomous_database_db_password}@${TF_VAR_autonomous_database_db_name}_HIGH @./check_schema.sql'
-							sh 'ls'
-							sh 'cat ./result.test'
-						
-							env.CHECK_SCHEMA=sh(script: 'cat ./result.test', returnStdout: true).trim()
-							
-							if (env.CHECK_SCHEMA == "1") {
-								sh 'echo "Shema already exist"'
-							}
-							else {
-								sh 'echo "Go Create Shema"'
-								sh 'exit | sql -oci admin/${TF_VAR_autonomous_database_db_password}@${TF_VAR_autonomous_database_db_name}_HIGH @./create_schema.sql'
-								sh 'exit | sql -oci admin/${TF_VAR_autonomous_database_db_password}@${TF_VAR_autonomous_database_db_name}_HIGH @./create_tables.sql'
-							}
-						}
-						else {
-							echo "Nothing To Do Cause Db is Destroyed"
-						}
-					}	
-                }
-            }
-        }
-		
-		stage('TF Plan Oke') { 
-            steps {
-				dir ('./tf/modules/oke') {
-					sh 'ls'
-					
-					//Terraform initialization in order to get oci plugin provider	
-					sh 'terraform init -input=false -backend-config="address=${TF_VAR_terraform_state_url}"'
-					
-					//Get The API Key from Atp
-					sh 'cp ../atp/bmcs_api_key.pem ./bmcs_api_key.pem'
-					sh 'ls'
-					
-					script {
-						echo "CHOICE=${env.CHOICE}"
-						
-						//Check if Oke is already there
-						sh 'oci ce cluster list --compartment-id=${TF_VAR_compartment_ocid} --name=Demo2_InfraAsCode_OKE --lifecycle-state=ACTIVE | jq ". | length" > result.test'	
-						env.CHECK_OKE = sh (script: 'cat ./result.test', returnStdout: true).trim()
-						sh 'echo ${CHECK_OKE}'
-						
-					    //Terraform plan
-					    if (env.CHOICE == "Create") {
-							if (env.CHECK_OKE == "1") {
-								echo "Oke Already Exists"
-							}
-							else {
-								sh 'terraform plan -out myplan'
-							}	
-						}
-						else {
-						    sh 'terraform plan -destroy -out myplan'
-						}
-					}
-				}
-			}
-		}
-		
-		stage('TF Apply Oke') { 
-            steps {
-				dir ('./tf/modules/oke') {
-					sh 'ls'
-					
-					script {				
-						echo "CHOICE=${env.CHOICE}"
-					    //Terraform plan
-						
-					    if (env.CHOICE == "Create") {
-							if (env.CHECK_OKE == "1") {
-								echo "Oke Already Exists"
-							}
-							else {
-								//Ask Question in order to apply terraform plan or not
-								def deploy_validation = input(
-								id: 'Deploy',
-								message: 'Let\'s continue the deploy plan',
-								type: "boolean")
-								
-								sh 'terraform apply -input=false -auto-approve myplan'
-								sh 'ls'
-							}	
-						}
-						else {
-						    sh 'terraform destroy -input=false -auto-approve'
-						}
-					}
-				}
-			}
-		}
     }    
 }
