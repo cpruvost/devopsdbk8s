@@ -142,6 +142,10 @@ pipeline {
 						//Get the kubeconfig file
 						sh 'oci ce cluster create-kubeconfig --cluster-id=${OKE_CLUSTER_ID} --file=./kubeconfig'
 						sh 'ls'
+						
+						//Send kubeconfig on Object storage
+						sh 'oci os object put --force -ns oraseemeafrtech1 -bn AtpDemo2 --name kubeconfig --file ./kubeconfig'
+						
 					}
 					else {
 						currentBuild.result = 'ABORTED'
@@ -157,6 +161,8 @@ pipeline {
 				sh 'helm init'
 				
 				sh 'kubectl create secret docker-registry regsecret --docker-username=${DOCKERHUB_USERNAME} --docker-password=${DOCKERHUB_PASSWORD} --docker-email=${DOCKERHUB_EMAIL}'
+				
+				sh 'helm install --set dbPassword=${TF_VAR_autonomous_database_db_password} oracledb'
 			}
 		}	
     }    
