@@ -148,5 +148,11 @@ pipeline {
 				}	
             }
         }
+		
+		stage('Oracle Db') {
+            steps {
+				sh 'kubectl version'
+			}
+		}	
     }    
 }
