@@ -136,6 +136,10 @@ pipeline {
 						echo "Oke is running"
 						env.OKE_CLUSTER_ID = sh returnStdout: true, script: 'oci ce cluster list --compartment-id=${TF_VAR_compartment_ocid} --name=Demo2_InfraAsCode_OKE --lifecycle-state=ACTIVE | jq -r .data[0].id'
 						echo "OKE_CLUSTER_ID=${OKE_CLUSTER_ID}"
+						
+						//Get the kubeconfig file
+						sh 'oci ce cluster create-kubeconfig --cluster-id=${OKE_CLUSTER_ID} --file=./kubeconfig'
+						sh 'ls'
 					}
 					else {
 						currentBuild.result = 'ABORTED'
