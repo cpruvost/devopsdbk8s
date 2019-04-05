@@ -160,9 +160,10 @@ pipeline {
 				sh 'kubectl version'
 				sh 'helm init'
 				
-				sh 'kubectl create secret docker-registry regsecret --docker-username=${DOCKERHUB_USERNAME} --docker-password=${DOCKERHUB_PASSWORD} --docker-email=${DOCKERHUB_EMAIL}'
+				sh ' kubectl get secrets'
+				//sh 'kubectl create secret docker-registry regsecret --docker-username=${DOCKERHUB_USERNAME} --docker-password=${DOCKERHUB_PASSWORD} --docker-email=${DOCKERHUB_EMAIL}'
 				
-				sh 'helm install --set dbPassword=${TF_VAR_autonomous_database_db_password} oracledb'
+				//sh 'helm install --set dbPassword=${TF_VAR_autonomous_database_db_password} oracledb'
 			}
 		}	
     }    
