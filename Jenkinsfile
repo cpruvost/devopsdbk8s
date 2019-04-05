@@ -161,6 +161,15 @@ pipeline {
 				sh 'helm init'
 				
 				sh ' kubectl get secrets'
+				script {
+					env.THE_SECRET = sh returnStdout: true, script: 'kubectl get secrets -o json | jq -r .items[].metadata.name | grep regcred'
+					if (env.THE_SECRET == "regcred") {
+						echo 'Secret Already exists'
+					}
+					else {
+						echo 'Go Create Secret'
+					}
+				}
 				//sh 'kubectl create secret docker-registry regsecret --docker-username=${DOCKERHUB_USERNAME} --docker-password=${DOCKERHUB_PASSWORD} --docker-email=${DOCKERHUB_EMAIL}'
 				
 				//sh 'helm install --set dbPassword=${TF_VAR_autonomous_database_db_password} oracledb'
