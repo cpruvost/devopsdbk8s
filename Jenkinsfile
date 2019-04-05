@@ -65,6 +65,7 @@ pipeline {
 					env.TF_VAR_region = sh returnStdout: true, script: 'vault kv get -field=region secret/demoatp'
 					env.DOCKERHUB_USERNAME = sh returnStdout: true, script: 'vault kv get -field=dockerhub_username secret/demoatp'
 					env.DOCKERHUB_PASSWORD = sh returnStdout: true, script: 'vault kv get -field=dockerhub_password secret/demoatp'
+					env.DOCKERHUB_EMAIL = sh returnStdout: true, script: 'vault kv get -field=dockerhub_email secret/demoatp'
 					env.KUBECONFIG = './kubeconfig'
 					
 					//Terraform debugg option if problem
@@ -80,6 +81,7 @@ pipeline {
 				echo "TF_VAR_region=${TF_VAR_region}"
 				echo "DOCKERHUB_USERNAME=${DOCKERHUB_USERNAME}"
 				echo "DOCKERHUB_PASSWORD=${DOCKERHUB_PASSWORD}"
+				echo "DOCKERHUB_EMAIL=${DOCKERHUB_EMAIL}"
 				echo "KUBECONFIG=${KUBECONFIG}"
 				
 				
@@ -153,6 +155,8 @@ pipeline {
             steps {
 				sh 'kubectl version'
 				sh 'helm init'
+				
+				sh 'kubectl create secret docker-registry regsecret --docker-username=${DOCKERHUB_USERNAME} --docker-password=${DOCKERHUB_PASSWORD} --docker-email=${DOCKERHUB_EMAIL}'
 			}
 		}	
     }    
