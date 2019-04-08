@@ -164,7 +164,7 @@ pipeline {
 				
 				script {
 					
-					sh 'kubectl get secrets -o json | jq -r .items[].metadata.name | grep "regcred" > result.test'
+					sh 'kubectl get secrets -o json | jq -c -r \'.items[].metadata.name | select( . | contains("regcred"))\' > result.test'
 					env.THE_SECRET = sh (script: 'cat ./result.test', returnStdout: true).trim()
 					sh 'echo ${THE_SECRET}'
 					
