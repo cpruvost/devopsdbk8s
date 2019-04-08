@@ -178,7 +178,17 @@ pipeline {
 					echo "CHOICE=${env.CHOICE}"
 						    
 					if (env.CHOICE == "Create") {
-						sh 'helm install --name ${TF_VAR_autonomous_database_db_name} oracledb'
+						sh 'helm ls --output json | jq -c -r \'.Releases[].Name | select( . | contains("${TF_VAR_autonomous_database_db_name}"))\' > result.test'
+						env.THE_DB = sh (script: 'cat ./result.test', returnStdout: true).trim()
+						sh 'echo ${THE_DB}'
+					
+						if (env.THE_DB == "${TF_VAR_autonomous_database_db_name}") {
+							echo "Database Already exists"
+						}
+						else {
+							echo "Go Create Db"
+							sh 'helm install --name ${TF_VAR_autonomous_database_db_name} oracledb'
+						}
 					}
 					else {
 						echo "remove"
