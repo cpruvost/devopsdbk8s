@@ -160,8 +160,6 @@ pipeline {
 				sh 'kubectl version'
 				sh 'helm init'
 				
-				sh 'kubectl get secrets'
-				
 				script {
 					
 					sh 'kubectl get secrets -o json | jq -c -r \'.items[].metadata.name | select( . | contains("regsecret"))\' > result.test'
@@ -175,9 +173,16 @@ pipeline {
 						echo 'Go Create Secret'
 						//sh 'kubectl create secret docker-registry regsecret --docker-username=${DOCKERHUB_USERNAME} --docker-password=${DOCKERHUB_PASSWORD} --docker-email=${DOCKERHUB_EMAIL}'
 					}
+					
+					echo "CHOICE=${env.CHOICE}"
+						    
+					if (env.CHOICE == "Create") {
+						sh 'helm install --set dbPassword=${TF_VAR_autonomous_database_db_password} --name 12.2.0.1 oracledb'
+					}
+					else {
+						echo "remove"
+					}
 				}
-				
-				//sh 'helm install --set dbPassword=${TF_VAR_autonomous_database_db_password} oracledb'
 			}
 		}	
     }    
