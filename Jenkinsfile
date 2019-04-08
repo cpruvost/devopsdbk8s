@@ -184,7 +184,8 @@ pipeline {
 					
 						if (env.THE_DB == "k8sdb") {
 							echo "Database Already exists"
-							sh (script: 'kubectl get svc --namespace default k8sdb-oracledb -o jsonpath=\'{.status.loadBalancer.ingress[0].ip}\'', returnStdout: true)
+							env.SERVICES = sh (script: 'kubectl get svc', returnStdout: true)
+							echo "${env.SERVICES}"
 							//sh 'kubectl get svc --namespace default k8sdb-oracledb -o jsonpath=\'{.status.loadBalancer.ingress[0].ip}\' > ip.test'
 							//sh 'cat ./ip.test'
 						}
