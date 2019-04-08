@@ -182,16 +182,18 @@ pipeline {
 						env.THE_DB = sh (script: 'cat ./result.test', returnStdout: true).trim()
 						sh 'echo ${THE_DB}'
 					
-						if (env.THE_DB == ${TF_VAR_autonomous_database_db_name}) {
+						if (env.THE_DB == "k8sdb") {
 							echo "Database Already exists"
+							sh 'kubectl get svc --namespace default k8sdb-oracledb -o jsonpath=\'{.status.loadBalancer.ingress[0].ip}\''
 						}
 						else {
 							echo "Go Create Db"
 							sh 'helm install --name ${TF_VAR_autonomous_database_db_name} oracledb'
+							sh 'kubectl get svc --namespace default k8sdb-oracledb -o jsonpath=\'{.status.loadBalancer.ingress[0].ip}\''
 						}
 					}
 					else {
-						echo "remove"
+						sh 'helm delete ${TF_VAR_autonomous_database_db_name} --purge 
 					}
 				}
 			}
