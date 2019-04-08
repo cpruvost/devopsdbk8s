@@ -172,7 +172,7 @@ pipeline {
 					}
 					else {
 						echo 'Go Create Secret'
-						//sh 'kubectl create secret docker-registry regsecret --docker-username=${DOCKERHUB_USERNAME} --docker-password=${DOCKERHUB_PASSWORD} --docker-email=${DOCKERHUB_EMAIL}'
+						sh 'kubectl create secret docker-registry regsecret --docker-username=${DOCKERHUB_USERNAME} --docker-password=${DOCKERHUB_PASSWORD} --docker-email=${DOCKERHUB_EMAIL}'
 					}
 					
 					echo "CHOICE=${env.CHOICE}"
@@ -185,13 +185,13 @@ pipeline {
 						if (env.THE_DB == "k8sdb") {
 							echo "Database Already exists"
 							sh 'kubectl get svc --namespace default k8sdb-oracledb -o jsonpath=\'{.status.loadBalancer.ingress[0].ip}\' > ip.test'
-							sh 'cat ip.test'
+							sh 'cat ./ip.test'
 						}
 						else {
 							echo "Go Create Db"
 							sh 'helm install --name ${TF_VAR_autonomous_database_db_name} oracledb'
 							sh 'kubectl get svc --namespace default k8sdb-oracledb -o jsonpath=\'{.status.loadBalancer.ingress[0].ip}\' > ip.test'
-							sh 'cat ip.test'
+							sh 'cat ./ip.test'
 						}
 					}
 					else {
