@@ -178,7 +178,7 @@ pipeline {
 					echo "CHOICE=${env.CHOICE}"
 						    
 					if (env.CHOICE == "Create") {
-						sh 'helm install oracledb'
+						sh 'helm install --name ${TF_VAR_autonomous_database_db_name} oracledb'
 					}
 					else {
 						echo "remove"
