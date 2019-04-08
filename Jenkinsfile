@@ -164,9 +164,9 @@ pipeline {
 				
 				script {
 					
-					sh 'kubectl get secrets -o json | jq -c -r \'.items[].metadata.name | select( . | contains("regcred"))\''
-					//env.THE_SECRET = sh (script: 'cat ./result.test', returnStdout: true).trim()
-					//sh 'echo ${THE_SECRET}'
+					sh 'kubectl get secrets -o json | jq -c -r \'.items[].metadata.name | select( . | contains("regsecret"))\' > result.test'
+					env.THE_SECRET = sh (script: 'cat ./result.test', returnStdout: true).trim()
+					sh 'echo ${THE_SECRET}'
 					
 					if (env.THE_SECRET == "regcred") {
 						echo 'Secret Already exists'
