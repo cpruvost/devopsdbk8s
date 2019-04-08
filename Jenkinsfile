@@ -168,14 +168,14 @@ pipeline {
 					env.THE_SECRET = sh (script: 'cat ./result.test', returnStdout: true).trim()
 					sh 'echo ${THE_SECRET}'
 					
-					if (env.THE_SECRET == "regcred") {
+					if (env.THE_SECRET == "regsecret") {
 						echo 'Secret Already exists'
 					}
 					else {
 						echo 'Go Create Secret'
+						//sh 'kubectl create secret docker-registry regsecret --docker-username=${DOCKERHUB_USERNAME} --docker-password=${DOCKERHUB_PASSWORD} --docker-email=${DOCKERHUB_EMAIL}'
 					}
 				}
-				//sh 'kubectl create secret docker-registry regsecret --docker-username=${DOCKERHUB_USERNAME} --docker-password=${DOCKERHUB_PASSWORD} --docker-email=${DOCKERHUB_EMAIL}'
 				
 				//sh 'helm install --set dbPassword=${TF_VAR_autonomous_database_db_password} oracledb'
 			}
