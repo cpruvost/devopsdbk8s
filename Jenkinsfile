@@ -160,11 +160,19 @@ pipeline {
 				sh 'kubectl version'
 				sh 'helm init'
 				
-				sh ' kubectl get secrets'
+				sh 'kubectl get secrets'
+				
 				script {
-					sh 'kubectl get secrets -o json | jq -r .items[].metadata.name | grep regcred > result.test'
+					if (kubectl get secrets | grep regcred) {
+						env.THE_SECRET = "regcred"
+					}
+					else {
+						env.THE_SECRET = "noregcred"
+					}
+					
+					/*sh 'kubectl get secrets -o json | jq -r .items[].metadata.name | grep regcred > result.test'
 					env.THE_SECRET = sh (script: 'cat ./result.test', returnStdout: true).trim()
-					sh 'echo ${THE_SECRET}'
+					sh 'echo ${THE_SECRET}'*/
 					
 					if (env.THE_SECRET == "regcred") {
 						echo 'Secret Already exists'
