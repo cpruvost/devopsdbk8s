@@ -177,7 +177,7 @@ pipeline {
 					echo "CHOICE=${env.CHOICE}"
 						    
 					if (env.CHOICE == "Create") {
-						sh 'helm install --set dbPassword=${TF_VAR_autonomous_database_db_password} --name 12.2.0.1 oracledb'
+						sh 'helm install oracledb'
 					}
 					else {
 						echo "remove"
