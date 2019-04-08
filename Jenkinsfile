@@ -12,7 +12,7 @@ pipeline {
         password(defaultValue: "xxxxxx", description: 'What is the vault token ?', name: 'VAULT_TOKEN')
 		string(defaultValue: "130.61.125.123", description: 'What is the vault server IP Address ?', name: 'VAULT_SERVER_IP')
 		string(defaultValue: "demoatp", description: 'What is the vault secret name ?', name: 'VAULT_SECRET_NAME')  
-		string(defaultValue: "atpdb2", description: 'What is the database name ?', name: 'DATABASE_NAME') 
+		string(defaultValue: "k8sdb", description: 'What is the database name ?', name: 'DATABASE_NAME') 
 		password(defaultValue: "AlphA_2014_!", description: 'What is the database password ?', name: 'DATABASE_PASSWORD')  		
 		choice(name: 'CHOICE', choices: ['Create', 'Remove'], description: 'Choose between Create or Remove Infrastructure')
     }
