@@ -159,6 +159,7 @@ pipeline {
             steps {
 				sh 'kubectl version'
 				sh 'helm init --upgrade'
+				sh 'helm list'
 				
 				script {
 					
