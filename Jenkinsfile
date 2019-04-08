@@ -178,7 +178,7 @@ pipeline {
 					echo "CHOICE=${env.CHOICE}"
 						    
 					if (env.CHOICE == "Create") {
-						sh 'helm ls --output json | jq -c -r \'.Releases[].Name | select( . | contains(env.TF_VAR_autonomous_database_db_name))\' > result.test'
+						sh 'helm ls --output json | jq -c -r \'.Releases[].Name | select( . | contains("k8sdb"))\' > result.test'
 						env.THE_DB = sh (script: 'cat ./result.test', returnStdout: true).trim()
 						sh 'echo ${THE_DB}'
 					
