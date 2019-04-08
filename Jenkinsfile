@@ -193,7 +193,7 @@ pipeline {
 						}
 					}
 					else {
-						sh 'helm delete ${TF_VAR_autonomous_database_db_name} --purge 
+						sh 'helm delete ${TF_VAR_autonomous_database_db_name} --purge'
 					}
 				}
 			}
