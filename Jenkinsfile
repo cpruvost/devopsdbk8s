@@ -162,7 +162,10 @@ pipeline {
 				
 				sh ' kubectl get secrets'
 				script {
-					env.THE_SECRET = sh returnStdout: true, script: 'kubectl get secrets -o json | jq -r .items[].metadata.name | grep regcred'
+					sh 'kubectl get secrets -o json | jq -r .items[].metadata.name | grep regcred > result.test'
+					env.THE_SECRET = sh (script: 'cat ./result.test', returnStdout: true).trim()
+					sh 'echo ${THE_SECRET}'
+					
 					if (env.THE_SECRET == "regcred") {
 						echo 'Secret Already exists'
 					}
