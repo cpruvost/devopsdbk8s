@@ -158,7 +158,7 @@ pipeline {
 		stage('Oracle Db') {
             steps {
 				sh 'kubectl version'
-				sh 'helm init'
+				sh 'helm init --upgrade'
 				
 				script {
 					
